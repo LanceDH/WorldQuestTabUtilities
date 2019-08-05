@@ -1,0 +1,11 @@
+﻿## Interface: 80200
+## Title: World Quest Tab Utilities
+## Notes: Interface for api documentation.
+## Author: LanceDH
+## Version: 8.2.01
+## LoadOnDemand: 1
+## SavedVariables: WQTUDB
+## Dependencies: WorldQuestTab
+
+WorldQuestTabUtilities.xml
+

@@ -1,0 +1,117 @@
+ <Ui xmlns="http://www.blizzard.com/wow/ui/"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ../../FrameXML/UI.xsd">
+	
+	<Include file="libs\AddonDropDown-1.0\AddonDropDown-1.0.xml"/>
+	<Script file="Locals.lua"/>
+	<Script file="WorldQuestTabUtilities.lua"/>
+	
+	<Frame name="WQTU_TallyTemplate" virtual="true" enableMouse="true" enableMouseWheel="true">
+		<Size x="75" y="26" />
+		<HitRectInsets bottom="-1"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="BGCap" file="Interface\COMMON\Common-Input-Border">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" x="-8"/>
+						<Anchor point="BOTTOMRIGHT"/>
+					</Anchors>
+					<TexCoords left="0.9375" right="1" top="0" bottom="0.625"/>
+				</Texture>
+				<Texture parentKey="BG" file="Interface\COMMON\Common-Input-Border">
+					<Anchors>
+						<Anchor point="TOPLEFT"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.BGCap" relativePoint="BOTTOMLEFT"/>
+					</Anchors>
+					<TexCoords left="0.078" right="0.9375" top="0" bottom="0.625"/>
+				</Texture>
+				<Texture parentKey="BGDarken">
+					<Anchors>
+						<Anchor point="TOPLEFT" y="-2"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.BGCap" x="-2" y="2"/>
+					</Anchors>
+					<Color r="0" g="0" b="0" a="0.5" />
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<Texture parentKey="Icon" >
+					<Size x="20" y="20" />
+					<Anchors>
+						<Anchor point="LEFT" x="3"/>
+					</Anchors>
+					<Color r="0" g="0" b="0" a="0.5"/>
+				</Texture>
+				<MaskTexture parentKey="CircleMask" file="Interface\CharacterFrame\TempPortraitAlphaMask" hWrapMode="CLAMPTOBLACKADDITIVE" vWrapMode="CLAMPTOBLACKADDITIVE">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.Icon"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon"/>
+					</Anchors>
+					<MaskedTextures>
+						<MaskedTexture childKey="Icon"/>
+					</MaskedTextures>
+				</MaskTexture>
+				<FontString parentKey="Amount" inherits="GameFontNormalLeft" maxLines="1" justifyV="CENTER" text="99999">
+					<Size y="20" />
+					<Anchors>
+						<Anchor point="LEFT" relativeKey="$parent.Icon" relativePoint="RIGHT" x="5"/>
+						<Anchor point="RIGHT" x="-5"/>
+					</Anchors>
+					<Color r="1" g="0.82" b="0" a="1"/>
+				</FontString>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture parentKey="Ring" atlas="GarrMission_PartyBuffAbilityBorder" useAtlasSize="false">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.Icon" x="-6" y="6"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" x="6" y="-6"/>
+					</Anchors>
+					<Color r="0.75" g="0.75" b="0.75"/>
+				</Texture>
+			</Layer>
+		</Layers>
+		
+		<Scripts>
+			<OnMouseWheel>
+				self:GetParent():ChangeIndex(-delta);
+			</OnMouseWheel>
+			<OnEnter>
+				if (self.name and self.amount) then
+					GameTooltip:SetOwner(self, "ANCHOR_CURSOR_RIGHT");
+					GameTooltip:SetText(self.name, self.color.r, self.color.g, self.color.b, 1, true);
+					GameTooltip:AddLine(CURRENCY_TOTAL:format(self.amount, ""), 1, 0.82, 0, true);
+					GameTooltip:Show();
+				end
+				self:GetParent():HighlightQuests(self.quests);
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide();
+				self:GetParent():HighlightQuests();
+			</OnLeave>
+		</Scripts>
+	</Frame>
+	
+	<Frame name="WQTU_CoreFrame" parent="WQT_WorldQuestFrame" mixin="WQTU_CoreMixin">
+		<Layers>
+			<Layer level="OVERLAY" textureSubLevel="2">
+				<Line name="WQTU_DirectionLine" thickness="2" horizTile="false" alpha="1" texelSnappingBias="0.0" snapToPixelGrid="false">
+					<Color r=".8" g=".8" b=".8" a=".5"/>
+				</Line>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnLoad method="OnLoad" />
+			<OnEvent method="OnEvent" />
+		</Scripts>
+	</Frame>
+	
+	<Frame name="WQTY_TallyList" parent="WQT_WorldQuestFrame" mixin="WQTU_TallyListMixin">
+		<Size x="1" y="1" />
+		<Anchors>
+			<Anchor point="TOPLEFT" relativeTo="WQT_WorldQuestFrame" relativePoint="TOPRIGHT" x="5"/>
+		</Anchors>
+		<Scripts>
+			<OnLoad method="OnLoad" />
+		</Scripts>
+	</Frame>
+	
+ </Ui>
