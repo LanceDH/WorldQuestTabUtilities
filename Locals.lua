@@ -9,6 +9,13 @@ L["TALLIES"] = "Tallies"
 L["UTILITY_SETTINGS"] = "Utility Settings"
 L["DIRECTION_LINE"] = "Direction line"
 L["DIRECTION_LINE_TT"] = "Add a line to the map showing the direction your charater is facing."
+L["WHATS_NEW"] = "What's New (Utils)";
+L["WHATS_NEW_TT"] = "View World Quest Tab Utilities patch notes."
+L["REWARD_GRAPH"] = "Reward Graph"
+
+L["BOTH_FACTIONS"] = "Both Factions"
+L["ACCOUNT"] = "Account"
+L["REALM"] = "Realm"
 
 if locale == "deDE" then
 end

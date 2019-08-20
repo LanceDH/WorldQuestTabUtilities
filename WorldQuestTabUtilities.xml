@@ -3,6 +3,7 @@
      xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ../../FrameXML/UI.xsd">
 	
 	<Script file="Locals.lua"/>
+	<Script file="Data.lua"/>
 	<Script file="WorldQuestTabUtilities.lua"/>
 	
 	<Frame name="WQTU_TallyTemplate" virtual="true" enableMouse="true" enableMouseWheel="true">
@@ -80,11 +81,11 @@
 					GameTooltip:AddLine(CURRENCY_TOTAL:format(self.amount, ""), 1, 0.82, 0, true);
 					GameTooltip:Show();
 				end
-				self:GetParent():HighlightQuests(self.quests);
+				self:GetParent():HighlightQuests(self.quests, true);
 			</OnEnter>
 			<OnLeave>
 				GameTooltip:Hide();
-				self:GetParent():HighlightQuests();
+				self:GetParent():HighlightQuests(self.quests, false);
 			</OnLeave>
 		</Scripts>
 	</Frame>
@@ -103,6 +104,151 @@
 		</Scripts>
 	</Frame>
 	
+	<Button name="WQTU_GraphButtonTemplate" virtual="true" mixin="WQTU_GraphButtonMixin" parentArray="Buttons" text="" > <!-- inherits="UIMenuButtonStretchTemplate" -->
+		<Size x="88" y="24" />	
+		<Frames>
+			<Frame parentKey="Art" setAllPoints="true">
+				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture parentKey="Bg" file="Interface\QUESTFRAME\UI-QuestLogTitleHighlight" alpha="0.1" alphaMode="ADD"/>
+					</Layer>
+					<Layer level="ARTWORK">
+						<Texture parentKey="Icon" file="aff">
+							<Size x="18" y="18"/>
+							<Anchors>
+								<Anchor point="CENTER"/>
+							</Anchors>
+						</Texture>
+						<FontString parentKey="CustomText" inherits="GameFontNormalLeft" maxLines="1" justifyV="MIDDLE" wordwrap="false">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="5" y="-5"/>
+								<Anchor point="BOTTOMRIGHT" x="-5" y="5"/>
+							</Anchors>
+							<Color r="1" g="1" b="1"/>
+						</FontString>
+					</Layer>
+					<Layer level="OVERLAY">
+						<Texture parentKey="SelectedLeft" file="Interface\PETBATTLES\PETJOURNAL" alpha="0">>
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" x="12"/>
+							</Anchors>
+							<TexCoords left="0.498046875" right="0.591796875" top="0.222" bottom="0.265625"/>
+						</Texture>
+						<Texture parentKey="SelectedRight" file="Interface\PETBATTLES\PETJOURNAL" alpha="0">>
+							<Anchors>
+								<Anchor point="TOPRIGHT"/>
+								<Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" x="-12"/>
+							</Anchors>
+							<TexCoords left="0.814453125" right="0.90625" top="0.222" bottom="0.265625"/>
+						</Texture>
+						<Texture parentKey="SelectedMiddle" file="Interface\PETBATTLES\PETJOURNAL" alpha="0">>
+							<Anchors>
+								<Anchor point="TOPLEFT" relativeKey="$parent.SelectedLeft" relativePoint="TOPRIGHT"/>
+								<Anchor point="BOTTOMRIGHT" relativeKey="$parent.SelectedRight" relativePoint="BOTTOMLEFT"/>
+							</Anchors>
+							<TexCoords left="0.591796875" right="0.814453125" top="0.222" bottom="0.265625"/>
+						</Texture>
+
+						<Texture parentKey="HLLeft" file="Interface\PETBATTLES\PETJOURNAL" alpha="0">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" x="12"/>
+							</Anchors>
+							<TexCoords left="0.498046875" right="0.591796875" top="0.1748046875" bottom="0.2197265625"/>
+						</Texture>
+						<Texture parentKey="HLRight" file="Interface\PETBATTLES\PETJOURNAL" alpha="0">
+							<Anchors>
+								<Anchor point="TOPRIGHT"/>
+								<Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" x="-12"/>
+							</Anchors>
+							<TexCoords left="0.814453125" right="0.90625" top="0.1748046875" bottom="0.2197265625"/>
+						</Texture>
+						<Texture parentKey="HLMiddle" file="Interface\PETBATTLES\PETJOURNAL" alpha="0">
+							<Anchors>
+								<Anchor point="TOPLEFT" relativeKey="$parent.HLLeft" relativePoint="TOPRIGHT"/>
+								<Anchor point="BOTTOMRIGHT" relativeKey="$parent.HLRight" relativePoint="BOTTOMLEFT"/>
+							</Anchors>
+							<TexCoords left="0.591796875" right="0.814453125" top="0.1748046875" bottom="0.2197265625"/>
+						</Texture>
+					</Layer>
+				</Layers>
+			</Frame>
+		</Frames>
+
+		<Scripts>
+			<OnClick method="OnClick" />
+			<OnMouseDown>
+				self.Art:SetPoint("TOPLEFT", -1, -1);
+				self.Art:SetPoint("BOTTOMRIGHT", -1, -1);
+			</OnMouseDown>
+			<OnMouseUp>
+				self.Art:SetPoint("TOPLEFT", 0, 0);
+				self.Art:SetPoint("BOTTOMRIGHT", 0, 0);
+			</OnMouseUp>
+			<OnEnter>
+				GameTooltip:SetOwner(self, "ANCHOR_CURSOR_RIGHT");
+				GameTooltip:SetText(self.name, 1, 1, 1, 1, true);
+				GameTooltip:Show();
+				if (self.Art.SelectedLeft:GetAlpha() == 0) then
+					self.Art.HLLeft:SetAlpha(1);
+					self.Art.HLRight:SetAlpha(1);
+					self.Art.HLMiddle:SetAlpha(1);
+				end
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide();
+				self.Art.HLLeft:SetAlpha(0);
+				self.Art.HLRight:SetAlpha(0);
+				self.Art.HLMiddle:SetAlpha(0);
+			</OnLeave>
+		</Scripts>
+	</Button>
+	
+	<Frame name="WQTU_GraphFrame" parent="UIParent" mixin="WQTU_GraphFrameMixin" hidden="true">
+		<Size x="300" y="500" />	
+		<Anchors>
+			<Anchor point="CENTER" relativeTo="UIParent"/>
+		</Anchors>
+		<Frames>
+			<Frame name="WQTU_Graph" parentKey="Graph" mixin="WQTU_GraphMixin">
+				<Anchors>
+					<Anchor point="TOPLEFT" />
+					<Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" y="-160"/>
+				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture name="bg" file="Interface/GUILDFRAME/GuildFrame">
+							<Color r="0.8" g="0.8" b="0.8"/>
+							<TexCoords lef="0" right="0.314453125" top="0.599609375‬" bottom="0.927734375‬"/>
+						</Texture>
+					</Layer>
+					<Layer level="OVERLAY" textureSubLevel="2">
+						<FontString parentKey="Title" inherits="GameFontNormalLeft" maxLines="2" justifyV="TOP" wordwrap="true" spacing="1">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+							</Anchors>
+							<Color r="1" g="1" b="1"/>
+						</FontString>
+						<Texture parentKey="TopDetail" atlas="QuestLog_TopDetail" useAtlasSize="true">
+							<Anchors>
+								<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" x="0" y="6"/>
+								<Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" x="0" y="6"/>
+							</Anchors>
+						</Texture>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnLoad method="OnLoad" />
+					<OnUpdate method="OnUpdate" />
+				</Scripts>
+			</Frame>
+		</Frames>
+		<Scripts>
+			<OnLoad method="OnLoad" />
+		</Scripts>
+	</Frame>
+	
 	<Frame name="WQTY_TallyList" parent="WQT_WorldQuestFrame" mixin="WQTU_TallyListMixin">
 		<Size x="1" y="1" />
 		<Anchors>
@@ -112,5 +258,52 @@
 			<OnLoad method="OnLoad" />
 		</Scripts>
 	</Frame>
+	
+	<Frame name="WQTU_GraphLineTemplate" virtual="true">
+		<Layers>
+			<Layer level="ARTWORK" textureSubLevel="0">
+				<Line parentKey="Fill" file="Interface/TARGETINGFRAME/UI-TargetingFrame-BarFill" thickness="2" horizTile="true" alpha="1" texelSnappingBias="0.0" snapToPixelGrid="false"/>
+			</Layer>
+		</Layers>
+	</Frame>
+	
+	<Frame name="WQTU_GraphScaleLineTemplate" virtual="true">
+		<Layers>
+			<Layer level="ARTWORK" textureSubLevel="-1">
+			<!-- file="Interface/TARGETINGFRAME/UI-TargetingFrame-BarFill" -->
+				<Line parentKey="Fill"  thickness="1" horizTile="true" alpha="1" texelSnappingBias="0.0" snapToPixelGrid="false">
+					<Color r=".2" g=".2" b=".2"/>
+				</Line>
+			</Layer>
+		</Layers>
+	</Frame>
+	
+	<Frame name="WQTU_GraphLabelTemplate" virtual="true"  parentArray="Labels">
+		<Layers>
+			<Layer level="ARTWORK" textureSubLevel="-1">
+				<FontString parentKey="Text" inherits="GameFontNormalTiny" maxLines="1" justifyV="TOP" wordwrap="false">
+					<Anchors>
+						<Anchor point="TOPLEFT"/>
+					</Anchors>
+					<Color r="0.5" g="0.5" b="0.5"/>
+				</FontString>
+			</Layer>
+		</Layers>
+	</Frame>
+	
+	<Frame name="WQTU_GraphPointTemplate" mixin="WQTU_GraphPointMixin" virtual="true">
+		<Size x="16" y="16" />	
+		<Layers>
+			<Layer level="ARTWORK" textureSubLevel="1">
+				<Texture parentKey="Icon" atlas="PlayerFriend" />
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnEnter method="OnEnter" />
+			<OnLeave method="OnLeave" />
+		</Scripts>
+	</Frame>
+	
+	
 	
  </Ui>
