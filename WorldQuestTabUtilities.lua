@@ -752,6 +752,7 @@ function WQTU_CoreMixin:OnLoad()
 
 	self:RegisterEvent("QUEST_TURNED_IN");
 	self:RegisterEvent("GET_ITEM_INFO_RECEIVED");
+	self:RegisterEvent("PLAYER_STOPPED_MOVING");
 	
 	-- Updates the player direction
 	self.updateTicker = C_Timer.NewTicker(0.5, function() 
@@ -775,6 +776,8 @@ function WQTU_CoreMixin:OnEvent(event, ...)
 		if (success and _rewardInfoCache["item"][itemId] and _rewardInfoCache["item"][itemId].isMissingData and WQTU_GraphFrame:IsShown()) then
 			WQTU_GraphFrame:CreateButtons();
 		end
+	elseif (event == "PLAYER_STOPPED_MOVING") then
+		WQTU:UpdatePlayerPosition();
 	end
 end
 
@@ -876,7 +879,7 @@ function WQTU_TallyListMixin:ShowRewards()
 	end
 	WQT_WorldMapContainer.margins.right = TALLY_WIDTH;
 	if(WorldMapFrame:IsMaximized()) then
-		--WQT_WorldMapContainer:ConstrainPosition();
+		WQT_WorldMapContainer:ConstrainPosition();
 	end
 	
 	self.displayIndex = max(self.displayIndex , 1);
@@ -885,7 +888,7 @@ function WQTU_TallyListMixin:ShowRewards()
 	
 	if (#self.sortedRewards  > MAX_NUM_TALLIES) then
 		local numPrev = self.displayIndex - 1
-		self:AddEntry("", 450907, numPrev == 0 and "" or "+"..numPrev, 1, nil, -1, self.displayIndex == 1);
+		self:AddEntry("", 450907, numPrev == 0 and "" or "+"..numPrev, nil, 1, -1, self.displayIndex == 1);
 	end
 	
 	local displayCount = 0;
@@ -973,6 +976,8 @@ local function AddToFilters(self, level)
 		ADD:AddButton(info, level)
 		
 		info.text = _L["REWARD_GRAPH"];
+		info.tooltipTitle = _L["REWARD_GRAPH"];
+		info.tooltipText =  _L["REWARD_GRAPH_TT"];
 		info.func = function()
 						WQT_WorldQuestFrame:ShowOverlayFrame(WQTU_GraphFrame);
 						WQTU_GraphFrame:CreateButtons();
@@ -1087,7 +1092,7 @@ function WQTU:OnInitialize()
 		end
 	end
 	
-	if (LDHDebug) then
+	if (_addon.debug and LDHDebug) then
 		LDHDebug:Monitor(_addonName);
 	end
 end
@@ -1229,16 +1234,7 @@ end
 
 SLASH_WQTU1 = '/wqtu';
 local function slashcmd(msg, editbox)
-	WQTU_GraphFrame:Show();
-	
-	
-	--WQTU_GraphFrame:ClearAllPoints();
-	--WQTU_GraphFrame:SetParent(WQT_WorldQuestFrame.Blocker)
-	--WQTU_GraphFrame:SetPoint("TOPLEFT", WQT_WorldQuestFrame.Blocker);
-	--WQTU_GraphFrame:SetPoint("BOTTOMRIGHT", WQT_WorldQuestFrame.Blocker);
-	--WQTU_GraphFrame:SetFrameLevel(WQT_WorldQuestFrame.Blocker:GetFrameLevel()+1)
-	--WQTU_GraphFrame:SetFrameStrata(WQTU_GraphFrame:GetFrameStrata())
-	
+
 end
 SlashCmdList["WQTU"] = slashcmd
 

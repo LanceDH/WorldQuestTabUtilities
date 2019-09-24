@@ -1,6 +1,6 @@
-﻿## Interface: 80200
+﻿## Interface: 80205
 ## Title: World Quest Tab Utilities
-## Notes: Interface for api documentation.
+## Notes: Plug-in for World Quest Tab.
 ## Author: LanceDH
 ## Version: 8.2.01
 ## LoadOnDemand: 1
