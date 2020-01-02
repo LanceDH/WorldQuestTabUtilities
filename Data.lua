@@ -1,7 +1,5 @@
 ﻿local addonName, addon = ...
 
-
---addon.WQT = LibStub("AceAddon-3.0"):NewAddon("WorldQuestTab");
 addon.variables = {};
 addon.debug = false;
 local WQT_Utils = WQT_WorldQuestFrame.WQT_Utils;
@@ -22,7 +20,19 @@ _V["HISTORY_FILTER_SCOPE"] = {
 
 -- This is just easier to maintain than changing the entire string every time
 local _patchNotes = {
-		{["version"] = "8.2.01"
+		{["version"] = "8.2.02"
+			,["fixes"] = {
+				"Fixed more errors related to unavailable player postition data."
+				,"Fixed text printed in chat when completing a world quest."
+			}
+		}
+		,{["version"] = "8.2.01"
+			,["minor"] = 2
+			,["fixes"] = {
+				"Fixed an error while inside instances. Because Blizzard doesn't allow position tracking inside instances, the direction line will not work while inside."
+			}
+		}
+		,{["version"] = "8.2.01"
 			,["new"] = {
 				"A line on the map indicates the direction your character is currently facing."
 				,"A 'Distance' sort, which sorts the quests by distance from the player, if possible."

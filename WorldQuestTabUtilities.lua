@@ -107,15 +107,6 @@ local function Lerp(a, b, v)
 	return a + (b-a) * v;
 end
 
-local function printReward(rewardInfo, amount)
-	if not rewardInfo then return; end
-	amount = amount or 0;
-	if (rewardInfo.name == WORLD_QUEST_REWARD_FILTERS_GOLD) then
-		amount = floor(amount / 10000);
-	end
-	print("|T"..rewardInfo.texture..":0|t", amount, rewardInfo.name);
-end
-
 local function FilterMatchesFaction(filterId, faction)
 	return (filterId == 1) or
 		(filterId == 2 and faction == "Alliance") or
@@ -307,10 +298,6 @@ function WQTU_Utilities:AddQuestRewardsToHistory(questId)
 	
 	-- No longer need the cached info
 	_cachedRewards[questId] = nil;
-	
-	for index, amount in pairs(historyCharacter.rewards) do
-		print(index, amount);
-	end
 end
 
 local function TallyAreaBlocked()
@@ -927,11 +914,11 @@ function WQTU_TallyListMixin:HighlightQuests(quests, value)
 	if (quests) then
 		if (value) then
 			for questId in pairs(quests) do
-				WQT_WorldQuestFrame.pinHandler:ShowHighlightOnPinForQuestId(questId);
+				WQT_WorldQuestFrame.pinDataProvider:SetQuestIDPinged(questId, true);
 			end
 		else
 			for questId in pairs(quests) do
-				WQT_WorldQuestFrame.pinHandler:HideHighlightOnPinForQuestId(questId);
+				WQT_WorldQuestFrame.pinDataProvider:SetQuestIDPinged(questId, false);
 			end
 		end
 	end
@@ -960,7 +947,7 @@ local function AddToFilters(self, level)
 		info.tooltipTitle = _L["WHATS_NEW"];
 		info.tooltipText =  _L["WHATS_NEW_TT"];
 		info.func = function()
-						local scrollFrame = WQTU_VersionFrame;
+						local scrollFrame = WQT_VersionFrame;
 						local blockerText = scrollFrame.Text;
 						
 						blockerText:SetText(_V["LATEST_UPDATE"]);
@@ -992,7 +979,7 @@ local function AddToFilters(self, level)
 			info.tooltipText =  _L["DIRECTION_LINE_TT"];
 			info.func = function(_, _, _, value)
 					settings.directionLine = value;
-					WQTY_TallyList:UpdateList();
+					WQTU_TallyList:UpdateList();
 				end
 			info.checked = function() return settings.directionLine end;
 			ADD:AddButton(info, level);
@@ -1016,7 +1003,7 @@ local function AddToFilters(self, level)
 								settings.tallies[k] = true;
 							end
 							ADD:Refresh(self, 1, 3);
-							WQTY_TallyList:UpdateList();
+							WQTU_TallyList:UpdateList();
 						end
 			ADD:AddButton(info, level)
 			
@@ -1026,7 +1013,7 @@ local function AddToFilters(self, level)
 								settings.tallies[k] = false;
 							end
 							ADD:Refresh(self, 1, 3);
-							WQTY_TallyList:UpdateList();
+							WQTU_TallyList:UpdateList();
 						end
 			ADD:AddButton(info, level)
 		
@@ -1040,7 +1027,7 @@ local function AddToFilters(self, level)
 				info.text = label;
 				info.func = function(_, _, _, value)
 						settings.tallies[name] = value;
-						WQTY_TallyList:UpdateList();
+						WQTU_TallyList:UpdateList();
 					end
 				info.checked = function() return settings.tallies[name] end;
 				ADD:AddButton(info, level);
@@ -1061,6 +1048,10 @@ local function UpdateQuestsContinent()
 end
 
 function WQTU:UpdatePlayerPosition()
+	if (IsInInstance()) then
+		_playerContinent = nil;
+		return;
+	end
 	local map = C_Map.GetBestMapForUnit("player");
 	local position = C_Map.GetPlayerMapPosition(map, "player");
 	_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
@@ -1092,22 +1083,31 @@ function WQTU:OnInitialize()
 		end
 	end
 	
+	-- Version change
+	local currentVersion = GetAddOnMetadata(_addonName, "version");
+	if (self.settings.versionCheck < currentVersion) then
+		self.settings.updateSeen = false;
+		self.settings.versionCheck = currentVersion;
+	end
+	
 	if (_addon.debug and LDHDebug) then
 		LDHDebug:Monitor(_addonName);
 	end
 end
 
 function WQTU:OnEnable()
-	local map = C_Map.GetBestMapForUnit("player")
-	local position = C_Map.GetPlayerMapPosition(map, "player")
-	_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
+	if (not IsInInstance()) then
+		local map = C_Map.GetBestMapForUnit("player")
+		local position = C_Map.GetPlayerMapPosition(map, "player")
+		_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
+	end
 	
 	WQT_WorldQuestFrame:RegisterCallback("InitFilter", AddToFilters);
-	WQT_WorldQuestFrame:RegisterCallback("FilterQuestList", function() WQTY_TallyList:UpdateList() end);
+	WQT_WorldQuestFrame:RegisterCallback("FilterQuestList", function() WQTU_TallyList:UpdateList() end);
 	WQT_WorldQuestFrame:RegisterCallback("ListButtonUpdate", function(button) 
 			if (WQT_Utils:GetSetting("sortBy") == SORT_DISTANCE and WQT_Utils:GetSetting("list", "zone")) then
 				local text = UNKNOWN;
-				local distance = button.info.mapInfo.distance;
+				local distance = button.questInfo.mapInfo.distance;
 				WQT_Utils:GetSetting("list", "zone")
 				if (distance and distance < math.huge) then
 					text =  DISTANCE_FORMAT:format(floor(distance));
@@ -1163,12 +1163,12 @@ function WQTU:OnEnable()
 
 	hooksecurefunc("ShowUIPanel", function(frame) 
 			if (not WorldMapFrame:IsShown()) then return end
-			WQTY_TallyList:Collapse(TallyAreaBlocked());
+			WQTU_TallyList:Collapse(TallyAreaBlocked());
 		end);
 
 	hooksecurefunc("HideUIPanel", function(frame) 
 			if (not WorldMapFrame:IsShown()) then return end
-			WQTY_TallyList:Collapse(TallyAreaBlocked());
+			WQTU_TallyList:Collapse(TallyAreaBlocked());
 		end);
 
 	hooksecurefunc(WorldMapFrame, "OnMapChanged", function() 
@@ -1178,12 +1178,11 @@ function WQTU:OnEnable()
 		
 	WorldMapFrame:HookScript("OnUpdate", function(self) 
 			WQTU_DirectionLine:SetAlpha(0);
-			if (not WQTU.settings.directionLine) then return; end
-			
-			if (_currentContinent == _playerContinent and _currentMapPlayerPos) then
+			if (not WQTU.settings.directionLine or IsInInstance()) then return; end
+			local facing = GetPlayerFacing();
+			if (facing and _currentContinent == _playerContinent and _currentMapPlayerPos) then
 				WQTU_DirectionLine:SetAlpha(1);
 				local mapScale = WQTU_CoreFrame:GetEffectiveScale();
-				local facing = GetPlayerFacing();
 				local scale = 0.5/mapScale;
 				local degr = deg(facing)+90;
 				local mapChild = WorldMapFrame.ScrollContainer.Child;

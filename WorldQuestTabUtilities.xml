@@ -104,7 +104,7 @@
 		</Scripts>
 	</Frame>
 	
-	<Button name="WQTU_GraphButtonTemplate" virtual="true" mixin="WQTU_GraphButtonMixin" parentArray="Buttons" text="" > <!-- inherits="UIMenuButtonStretchTemplate" -->
+	<Button name="WQTU_GraphButtonTemplate" virtual="true" mixin="WQTU_GraphButtonMixin" parentArray="Buttons" text="" >
 		<Size x="88" y="24" />	
 		<Frames>
 			<Frame parentKey="Art" setAllPoints="true">
@@ -249,7 +249,7 @@
 		</Scripts>
 	</Frame>
 	
-	<Frame name="WQTY_TallyList" parent="WQT_WorldQuestFrame" mixin="WQTU_TallyListMixin">
+	<Frame name="WQTU_TallyList" parent="WQT_WorldQuestFrame" mixin="WQTU_TallyListMixin">
 		<Size x="1" y="1" />
 		<Anchors>
 			<Anchor point="TOPLEFT" relativeTo="WQT_WorldQuestFrame" relativePoint="TOPRIGHT" x="5"/>
@@ -270,7 +270,6 @@
 	<Frame name="WQTU_GraphScaleLineTemplate" virtual="true">
 		<Layers>
 			<Layer level="ARTWORK" textureSubLevel="-1">
-			<!-- file="Interface/TARGETINGFRAME/UI-TargetingFrame-BarFill" -->
 				<Line parentKey="Fill"  thickness="1" horizTile="true" alpha="1" texelSnappingBias="0.0" snapToPixelGrid="false">
 					<Color r=".2" g=".2" b=".2"/>
 				</Line>
@@ -303,7 +302,5 @@
 			<OnLeave method="OnLeave" />
 		</Scripts>
 	</Frame>
-	
-	
 	
  </Ui>
