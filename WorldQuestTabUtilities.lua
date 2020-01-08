@@ -1,12 +1,12 @@
 ﻿
 local _addonName, _addon = ...;
 
-local WQTU = LibStub("AceAddon-3.0"):NewAddon("WorldQuestTabUtilities");
 local ADD = LibStub("AddonDropDown-1.0");
 local _L = _addon.L;
 local _V = _addon.variables;
 local WQT_V;
 local WQT_Utils = WQT_WorldQuestFrame.WQT_Utils;
+local WQTU = _addon.WQTU;
 
 local DISTANCE_FORMAT = GetLocale() == "enUS" and "%syd" or "%sm"
 local SORT_DISTANCE = 50;
@@ -1036,6 +1036,7 @@ local function AddToFilters(self, level)
 	end
 end
 
+
 local function UpdateQuestsContinent()
 	for k, questInfo in ipairs(WQT_QuestScrollFrame.questList) do
 		if (questInfo.questId) then
@@ -1196,6 +1197,20 @@ function WQTU:OnEnable()
 				WQTU_DirectionLine:SetThickness(scale * 2);
 			end
 		end)
+		
+	for name, value in pairs(WQTU.settings.tallies) do
+		local label = _tallyLabels[name] or name;
+		tinsert(_V["WQTU_SETTING_LIST"], {["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = label
+				, ["func"] = function(value) 
+					WQTU.settings.tallies[name] = value;
+					WQTU_TallyList:UpdateList();
+				end
+				,["getValueFunc"] = function() return WQTU.settings.tallies[name] end;
+				})
+				
+	end
+	-- Add WQTU settings to WQT's list
+	WQT_SettingsFrame:AddSettingList(_V["WQTU_SETTING_LIST"]);
 end
 
 WQTU_GraphButtonMixin = {}

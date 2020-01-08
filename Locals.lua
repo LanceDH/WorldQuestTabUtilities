@@ -12,7 +12,7 @@ L["DIRECTION_LINE_TT"] = "Add a line to the map showing the direction your chara
 L["WHATS_NEW"] = "What's New (Utils)";
 L["WHATS_NEW_TT"] = "View World Quest Tab Utilities patch notes."
 L["REWARD_GRAPH"] = "Reward Graph"
-L["REWARD_GRAPH_TT"] = "View a 14 day graph of rewards obrainted through world quests."
+L["REWARD_GRAPH_TT"] = "View a 14 day graph of rewards obtained through world quests."
 
 L["BOTH_FACTIONS"] = "Both Factions"
 L["ACCOUNT"] = "Account"

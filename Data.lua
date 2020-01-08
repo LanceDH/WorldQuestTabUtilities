@@ -1,10 +1,13 @@
 ﻿local addonName, addon = ...
 
+addon.WQTU = LibStub("AceAddon-3.0"):NewAddon("WorldQuestTabUtilities");
 addon.variables = {};
 addon.debug = false;
 local WQT_Utils = WQT_WorldQuestFrame.WQT_Utils;
 local _L = addon.L;
 local _V = addon.variables;
+local WQTU = addon.WQTU;
+local WQT_V = WQT_WorldQuestFrame.variables;
 
 _V["HISTORY_SORT_FACTION"] = {
 	[1] = _L["BOTH_FACTIONS"]
@@ -17,6 +20,33 @@ _V["HISTORY_FILTER_SCOPE"] = {
 	,[2] = _L["REALM"]
 	,[3] = CHARACTER
 }
+
+_V["WQTU_SETTING_LIST"] = {
+	{["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = _L["DIRECTION_LINE"], ["tooltip"] = _L["DIRECTION_LINE_TT"]
+			, ["func"] = function(value) 
+				WQTU.settings.directionLine = value;
+			end
+			,["getValueFunc"] = function() return WQTU.settings.directionLine end;
+			}
+	,{["type"] = WQT_V["SETTING_TYPES"].subTitle, ["categoryID"] = "WQTU", ["label"] = _L["TALLIES"]}
+	,{["type"] = WQT_V["SETTING_TYPES"].button, ["categoryID"] = "WQTU", ["label"] = CHECK_ALL
+			, ["func"] = function(value) 
+				for k, v in pairs(WQTU.settings.tallies) do
+					WQTU.settings.tallies[k] = true;
+				end
+				WQTU_TallyList:UpdateList();
+			end
+			}
+	,{["type"] = WQT_V["SETTING_TYPES"].button, ["categoryID"] = "WQTU", ["label"] = UNCHECK_ALL
+			, ["func"] = function(value) 
+				for k, v in pairs(WQTU.settings.tallies) do
+					WQTU.settings.tallies[k] = false;
+				end
+				WQTU_TallyList:UpdateList();
+			end
+			}
+}
+
 
 -- This is just easier to maintain than changing the entire string every time
 local _patchNotes = {

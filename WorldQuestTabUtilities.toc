@@ -2,7 +2,7 @@
 ## Title: World Quest Tab Utilities
 ## Notes: Plug-in for World Quest Tab.
 ## Author: LanceDH
-## Version: 8.2.02
+## Version: 8.3.01
 ## LoadOnDemand: 1
 ## SavedVariables: WQTUDB
 ## Dependencies: WorldQuestTab
