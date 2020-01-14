@@ -50,7 +50,12 @@ _V["WQTU_SETTING_LIST"] = {
 
 -- This is just easier to maintain than changing the entire string every time
 local _patchNotes = {
-		{["version"] = "8.2.02"
+		{["version"] = "8.3.01"
+			,["Changes"] = {
+				"Compatibility with new World Quest Tab settings."
+			}
+		}
+		,{["version"] = "8.2.02"
 			,["fixes"] = {
 				"Fixed more errors related to unavailable player postition data."
 				,"Fixed text printed in chat when completing a world quest."

@@ -1,4 +1,4 @@
-﻿## Interface: 80205
+﻿## Interface: 80300
 ## Title: World Quest Tab Utilities
 ## Notes: Plug-in for World Quest Tab.
 ## Author: LanceDH

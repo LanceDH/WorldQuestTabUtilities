@@ -970,69 +970,6 @@ local function AddToFilters(self, level)
 						WQTU_GraphFrame:CreateButtons();
 					end
 		ADD:AddButton(info, level)
-	
-	elseif level == 2 then
-		if ADD.MENU_VALUE == 0 then 
-		
-			info.text = _L["DIRECTION_LINE"];
-			info.tooltipTitle = _L["DIRECTION_LINE"];
-			info.tooltipText =  _L["DIRECTION_LINE_TT"];
-			info.func = function(_, _, _, value)
-					settings.directionLine = value;
-					WQTU_TallyList:UpdateList();
-				end
-			info.checked = function() return settings.directionLine end;
-			ADD:AddButton(info, level);
-		
-			info.tooltipTitle = nil;
-			info.tooltipText = nil;
-			info.hasArrow = true;
-			info.notCheckable = true;
-			info.text = _L["TALLIES"];
-			info.value = 350;
-			info.func = nil;
-			ADD:AddButton(info, level)
-		end
-	elseif level == 3 then
-		if ADD.MENU_VALUE == 350 then 
-			info.notCheckable = true;
-			info.text = CHECK_ALL;
-			
-			info.func = function()
-							for k, v in pairs(settings.tallies) do
-								settings.tallies[k] = true;
-							end
-							ADD:Refresh(self, 1, 3);
-							WQTU_TallyList:UpdateList();
-						end
-			ADD:AddButton(info, level)
-			
-			info.text = UNCHECK_ALL
-			info.func = function()
-							for k, v in pairs(settings.tallies) do
-								settings.tallies[k] = false;
-							end
-							ADD:Refresh(self, 1, 3);
-							WQTU_TallyList:UpdateList();
-						end
-			ADD:AddButton(info, level)
-		
-			info.notCheckable = false;
-		
-			info.tooltipTitle = nil;
-			info.tooltipText =  nil;
-		
-			for name, value in pairs(settings.tallies) do
-				local label = _tallyLabels[name] or name;
-				info.text = label;
-				info.func = function(_, _, _, value)
-						settings.tallies[name] = value;
-						WQTU_TallyList:UpdateList();
-					end
-				info.checked = function() return settings.tallies[name] end;
-				ADD:AddButton(info, level);
-			end
-		end
 	end
 end
 
