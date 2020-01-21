@@ -23,14 +23,16 @@ _V["HISTORY_FILTER_SCOPE"] = {
 
 _V["WQTU_SETTING_LIST"] = {
 	{["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = _L["DIRECTION_LINE"], ["tooltip"] = _L["DIRECTION_LINE_TT"]
-			, ["func"] = function(value) 
+			, ["valueChangedFunc"] = function(value) 
 				WQTU.settings.directionLine = value;
+				WQTU_DirectionLine:SetShown(value);
+				WQTU:UpdateDirectionLine();
 			end
 			,["getValueFunc"] = function() return WQTU.settings.directionLine end;
 			}
 	,{["type"] = WQT_V["SETTING_TYPES"].subTitle, ["categoryID"] = "WQTU", ["label"] = _L["TALLIES"]}
 	,{["type"] = WQT_V["SETTING_TYPES"].button, ["categoryID"] = "WQTU", ["label"] = CHECK_ALL
-			, ["func"] = function(value) 
+			, ["valueChangedFunc"] = function(value) 
 				for k, v in pairs(WQTU.settings.tallies) do
 					WQTU.settings.tallies[k] = true;
 				end
@@ -38,7 +40,7 @@ _V["WQTU_SETTING_LIST"] = {
 			end
 			}
 	,{["type"] = WQT_V["SETTING_TYPES"].button, ["categoryID"] = "WQTU", ["label"] = UNCHECK_ALL
-			, ["func"] = function(value) 
+			, ["valueChangedFunc"] = function(value) 
 				for k, v in pairs(WQTU.settings.tallies) do
 					WQTU.settings.tallies[k] = false;
 				end
@@ -51,7 +53,17 @@ _V["WQTU_SETTING_LIST"] = {
 -- This is just easier to maintain than changing the entire string every time
 local _patchNotes = {
 		{["version"] = "8.3.01"
-			,["Changes"] = {
+			,["minor"] = 2
+			,["changes"] = {
+				"Tally settings are now alphabetically sorted."
+			}
+			,["fixes"] = {
+				"Fixed distances not showing when quests are sorted by distance."
+				,"Fixed issues with WQTU settings."
+			}
+		}
+		,{["version"] = "8.3.01"
+			,["changes"] = {
 				"Compatibility with new World Quest Tab settings."
 			}
 		}

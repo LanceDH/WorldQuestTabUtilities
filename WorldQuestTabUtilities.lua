@@ -992,8 +992,34 @@ function WQTU:UpdatePlayerPosition()
 	end
 	local map = C_Map.GetBestMapForUnit("player");
 	local position = C_Map.GetPlayerMapPosition(map, "player");
-	_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
-	_currentMapPlayerPos = select(2, C_Map.GetMapPosFromWorldPos(_playerContinent, _playerWorldPos, WorldMapFrame.mapID));
+	if (position) then
+		_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
+		_currentMapPlayerPos = select(2, C_Map.GetMapPosFromWorldPos(_playerContinent, _playerWorldPos, WorldMapFrame.mapID));
+	else
+		_playerContinent = nil;
+		_playerWorldPos = nil;
+		_currentMapPlayerPos = nil;
+	end
+end
+
+function WQTU:UpdateDirectionLine()
+	WQTU_DirectionLine:SetShown(WQTU.settings.directionLine);
+	if (not WQTU.settings.directionLine or IsInInstance()) then return; end
+	local facing = GetPlayerFacing();
+	if (facing and _currentContinent == _playerContinent and _currentMapPlayerPos) then
+		local mapScale = WQTU_CoreFrame:GetEffectiveScale();
+		local scale = 0.5/mapScale;
+		local degr = deg(facing)+90;
+		local mapChild = WorldMapFrame.ScrollContainer.Child;
+		local w, h = mapChild:GetSize();
+		local startX = _currentMapPlayerPos.x * w;
+		local startY = (1-_currentMapPlayerPos.y )* h;
+		
+		WQTU_DirectionLine:ClearAllPoints();
+		WQTU_DirectionLine:SetStartPoint("BOTTOMLEFT", startX, startY);
+		WQTU_DirectionLine:SetEndPoint("BOTTOMLEFT", mapChild, startX + cos(degr)*12000*scale, startY + sin(degr)*12000*scale);
+		WQTU_DirectionLine:SetThickness(scale * 2);
+	end
 end
 
 function WQTU:OnInitialize()
@@ -1034,16 +1060,17 @@ function WQTU:OnInitialize()
 end
 
 function WQTU:OnEnable()
-	if (not IsInInstance()) then
-		local map = C_Map.GetBestMapForUnit("player")
-		local position = C_Map.GetPlayerMapPosition(map, "player")
-		_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
+	if (not IsInInstance() and WorldMapFrame.mapID) then
+		_currentContinent = C_Map.GetWorldPosFromMapPos(WorldMapFrame.mapID, _nullVector);
+		WQTU:UpdatePlayerPosition();
+		WQTU:UpdateDirectionLine();
 	end
 	
 	WQT_WorldQuestFrame:RegisterCallback("InitFilter", AddToFilters);
 	WQT_WorldQuestFrame:RegisterCallback("FilterQuestList", function() WQTU_TallyList:UpdateList() end);
+	-- Replace quest zone text with distance when needed
 	WQT_WorldQuestFrame:RegisterCallback("ListButtonUpdate", function(button) 
-			if (WQT_Utils:GetSetting("sortBy") == SORT_DISTANCE and WQT_Utils:GetSetting("list", "zone")) then
+			if (WQT_Utils:GetSetting("sortBy") == SORT_DISTANCE and WQT_Utils:GetSetting("list", "showZone")) then
 				local text = UNKNOWN;
 				local distance = button.questInfo.mapInfo.distance;
 				WQT_Utils:GetSetting("list", "zone")
@@ -1115,37 +1142,30 @@ function WQTU:OnEnable()
 		end)
 		
 	WorldMapFrame:HookScript("OnUpdate", function(self) 
-			WQTU_DirectionLine:SetAlpha(0);
-			if (not WQTU.settings.directionLine or IsInInstance()) then return; end
-			local facing = GetPlayerFacing();
-			if (facing and _currentContinent == _playerContinent and _currentMapPlayerPos) then
-				WQTU_DirectionLine:SetAlpha(1);
-				local mapScale = WQTU_CoreFrame:GetEffectiveScale();
-				local scale = 0.5/mapScale;
-				local degr = deg(facing)+90;
-				local mapChild = WorldMapFrame.ScrollContainer.Child;
-				local w, h = mapChild:GetSize();
-				local startX = _currentMapPlayerPos.x * w;
-				local startY = (1-_currentMapPlayerPos.y )* h;
-				
-				WQTU_DirectionLine:ClearAllPoints();
-				WQTU_DirectionLine:SetStartPoint("BOTTOMLEFT", startX, startY);
-				WQTU_DirectionLine:SetEndPoint("BOTTOMLEFT", mapChild, startX + cos(degr)*12000*scale, startY + sin(degr)*12000*scale);
-				WQTU_DirectionLine:SetThickness(scale * 2);
-			end
+			WQTU:UpdateDirectionLine();
 		end)
-		
-	for name, value in pairs(WQTU.settings.tallies) do
-		local label = _tallyLabels[name] or name;
-		tinsert(_V["WQTU_SETTING_LIST"], {["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = label
-				, ["func"] = function(value) 
-					WQTU.settings.tallies[name] = value;
+	
+	local sortedTallies = {};
+	for key, value in pairs(WQTU.settings.tallies) do
+		local entry = {["key"] = key, ["label"] = _tallyLabels[key] or key};
+		tinsert(sortedTallies, entry);
+	end
+	
+	table.sort(sortedTallies, function(a, b) return a.label < b.label; end);
+	
+	for key, entry in ipairs(sortedTallies) do
+		local value = WQTU.settings.tallies[entry.key];
+		tinsert(_V["WQTU_SETTING_LIST"], {["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = entry.label
+				, ["valueChangedFunc"] = function(value) 
+					WQTU.settings.tallies[entry.key] = value;
 					WQTU_TallyList:UpdateList();
 				end
-				,["getValueFunc"] = function() return WQTU.settings.tallies[name] end;
+				,["getValueFunc"] = function() return WQTU.settings.tallies[entry.key] end;
 				})
 				
 	end
+	wipe(sortedTallies);
+	
 	-- Add WQTU settings to WQT's list
 	WQT_SettingsFrame:AddSettingList(_V["WQTU_SETTING_LIST"]);
 end
