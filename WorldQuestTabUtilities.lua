@@ -18,11 +18,6 @@ local TALLY_WIDTH = 75;
 local TALLY_WIDTH_COLLAPSED = 26;
 local GRAPH_MAX_BUTTON_ROWS = 9;
 
-local _playerContinent = 0;
-local _playerWorldPos;
-local _currentSort;
-local _currentContinent = 0;
-local _currentMapPlayerPos;
 local _nullVector = CreateVector2D(0, 0);
 local _playerFaction = GetPlayerFactionGroup();
 local _playerName = UnitName("player");
@@ -79,7 +74,7 @@ local WQTU_DEFAULTS = {
 	}
 }
 
-_rewardInfoCache = {
+local _rewardInfoCache = {
 		["gold"] = {
 			["texture"] = 133784
 			,["name"] = WORLD_QUEST_REWARD_FILTERS_GOLD
@@ -306,9 +301,11 @@ end
 
 local function UpdateQuestDistances()
 	for k, questInfo in ipairs(WQT_QuestScrollFrame.questList) do
+		local playerContinent = WQTU_DirectLineFrame.playerContinent;
 		local continent = questInfo.mapInfo.continent; 
 		local distance = math.huge;
-		if (continent == _playerContinent) then 
+		-- Only count the current continent. Player's coordinates are per map file
+		if (playerContinent and playerContinent == continent) then 
 			distance =  math.sqrt(C_TaskQuest.GetDistanceSqToQuest(questInfo.questId));
 		end
 		questInfo.mapInfo.distance = distance;
@@ -731,25 +728,14 @@ end
 WQTU_CoreMixin = {};
 
 function WQTU_CoreMixin:OnLoad()
-	local mapChild = WorldMapFrame.ScrollContainer.Child;
-	self:SetParent(mapChild);
-	self:SetFrameLevel(3000);
-	self:ClearAllPoints();
-	self:SetAllPoints();
-
 	self:RegisterEvent("QUEST_TURNED_IN");
 	self:RegisterEvent("GET_ITEM_INFO_RECEIVED");
-	self:RegisterEvent("PLAYER_STOPPED_MOVING");
 	
-	-- Updates the player direction
 	self.updateTicker = C_Timer.NewTicker(0.5, function() 
 			if (WorldMapFrame:IsShown() and (GetUnitSpeed("player") > 0 or UnitOnTaxi("player") == 1 or C_LossOfControl.GetNumEvents() > 0)) then
-				WQTU:UpdatePlayerPosition();
-				if (not InCombatLockdown()) then
-					UpdateQuestDistances();
-					WQT_QuestScrollFrame:ApplySort();
-					WQT_QuestScrollFrame:DisplayQuestList();
-				end
+				UpdateQuestDistances();
+				WQT_QuestScrollFrame:ApplySort();
+				WQT_QuestScrollFrame:DisplayQuestList();
 			end
 		end);
 end
@@ -763,8 +749,6 @@ function WQTU_CoreMixin:OnEvent(event, ...)
 		if (success and _rewardInfoCache["item"][itemId] and _rewardInfoCache["item"][itemId].isMissingData and WQTU_GraphFrame:IsShown()) then
 			WQTU_GraphFrame:CreateButtons();
 		end
-	elseif (event == "PLAYER_STOPPED_MOVING") then
-		WQTU:UpdatePlayerPosition();
 	end
 end
 
@@ -774,7 +758,7 @@ function WQTU_TallyListMixin:OnLoad()
 	self.rewards = {};
 	self.sortedRewards = {};
 	
-	self.framePool = CreateFramePool("FRAME", self, "WQTU_TallyTemplate");
+	self.framePool = CreateFramePool("BUTTON", self, "WQTU_TallyTemplate");
 	self.previousEntry = nil;
 	self.displayIndex = 1;
 end
@@ -836,6 +820,7 @@ function WQTU_TallyListMixin:AddEntry(name, texture, amount, quests, quality, de
 	entry.Icon:SetTexture(texture);
 	entry.Icon:SetDesaturated(disable);
 	entry.Amount:SetText(amount);
+	entry:SetEnabled(not disable);
 	
 	entry.BG:SetVertexColor(color:GetRGB());
 	entry.BGCap:SetVertexColor(color:GetRGB());
@@ -985,42 +970,96 @@ local function UpdateQuestsContinent()
 	WQT_QuestScrollFrame:UpdateQuestList();
 end
 
-function WQTU:UpdatePlayerPosition()
-	if (IsInInstance()) then
-		_playerContinent = nil;
-		return;
-	end
-	local map = C_Map.GetBestMapForUnit("player");
-	local position = C_Map.GetPlayerMapPosition(map, "player");
-	if (position) then
-		_playerContinent, _playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
-		_currentMapPlayerPos = select(2, C_Map.GetMapPosFromWorldPos(_playerContinent, _playerWorldPos, WorldMapFrame.mapID));
-	else
-		_playerContinent = nil;
-		_playerWorldPos = nil;
-		_currentMapPlayerPos = nil;
+------------------------------------
+-- WQTU_DirectioLineMixin
+------------------------------------ 
+-- OnLoad()
+-- OnEvent(event, ...)
+-- UpdatePlayerPosition()	Update locations and continents used for drawing the line. Updates less than often other functions
+-- UpdateLineVisibility()
+-- UpdateLinePosition()		Positions the line. Happens OnUpdate of the world map
+
+WQTU_DirectioLineMixin = {};
+
+function WQTU_DirectioLineMixin:OnLoad()
+	local mapChild = WorldMapFrame.ScrollContainer.Child;
+	self:SetParent(mapChild);
+	self:SetFrameLevel(3000);
+	self:ClearAllPoints();
+	self:SetAllPoints();
+	
+	self:RegisterEvent("PLAYER_STOPPED_MOVING");
+	
+	-- Updates the player direction
+	self.updateTicker = C_Timer.NewTicker(0.5, function() 
+			if (WorldMapFrame:IsShown() and (GetUnitSpeed("player") > 0 or UnitOnTaxi("player") == 1 or C_LossOfControl.GetNumEvents() > 0)) then
+				self:UpdatePlayerPosition();
+			end
+		end);
+		
+	WorldMapFrame:HookScript("OnUpdate", function() 
+			self:UpdateLinePosition();
+		end)
+		
+	hooksecurefunc(WorldMapFrame, "OnMapChanged", function() 
+			self:UpdatePlayerPosition();
+		end)
+end
+
+function WQTU_DirectioLineMixin:OnEvent(event, ...)
+	if (event == "PLAYER_STOPPED_MOVING") then
+		self:UpdatePlayerPosition();
 	end
 end
 
-function WQTU:UpdateDirectionLine()
-	WQTU_DirectionLine:SetShown(WQTU.settings.directionLine);
-	if (not WQTU.settings.directionLine or IsInInstance()) then return; end
+function WQTU_DirectioLineMixin:UpdatePlayerPosition()
+	self.playerContinent = nil;
+	self.playerWorldPos = nil;
+	self.currentMapPlayerPos = nil;
+	self.currentContinent = nil;
+
+	local map = C_Map.GetBestMapForUnit("player");
+	if (map) then
+		local position = C_Map.GetPlayerMapPosition(map, "player");
+		if (position and WorldMapFrame.mapID) then
+			self.playerContinent, self.playerWorldPos = C_Map.GetWorldPosFromMapPos(map, position);
+			self.currentMapPlayerPos = select(2, C_Map.GetMapPosFromWorldPos(self.playerContinent, self.playerWorldPos, WorldMapFrame.mapID));
+			self.currentContinent = C_Map.GetWorldPosFromMapPos(WorldMapFrame.mapID, _nullVector);
+		end
+	end
+	
+	self.validPosition = self.playerContinent and self.currentMapPlayerPos and self.currentContinent and true or false;
+	self:UpdateLineVisibility();
+end
+
+function WQTU_DirectioLineMixin:UpdateLineVisibility()
+	local shouldShow = WQTU.settings.directionLine and self.validPosition;
+	self.Line:SetShown(shouldShow);
+end
+
+function WQTU_DirectioLineMixin:UpdateLinePosition()
+	if (not self.Line:IsShown() or not self.validPosition) then 
+		return;
+	end
+
 	local facing = GetPlayerFacing();
-	if (facing and _currentContinent == _playerContinent and _currentMapPlayerPos) then
-		local mapScale = WQTU_CoreFrame:GetEffectiveScale();
+	if (facing) then
+		local mapScale = self:GetEffectiveScale();
 		local scale = 0.5/mapScale;
 		local degr = deg(facing)+90;
 		local mapChild = WorldMapFrame.ScrollContainer.Child;
 		local w, h = mapChild:GetSize();
-		local startX = _currentMapPlayerPos.x * w;
-		local startY = (1-_currentMapPlayerPos.y )* h;
+		local startX = self.currentMapPlayerPos.x * w;
+		local startY = (1-self.currentMapPlayerPos.y )* h;
 		
-		WQTU_DirectionLine:ClearAllPoints();
-		WQTU_DirectionLine:SetStartPoint("BOTTOMLEFT", startX, startY);
-		WQTU_DirectionLine:SetEndPoint("BOTTOMLEFT", mapChild, startX + cos(degr)*12000*scale, startY + sin(degr)*12000*scale);
-		WQTU_DirectionLine:SetThickness(scale * 2);
+		self.Line:ClearAllPoints();
+		self.Line:SetStartPoint("BOTTOMLEFT", startX, startY);
+		self.Line:SetEndPoint("BOTTOMLEFT", mapChild, startX + cos(degr)*12000*scale, startY + sin(degr)*12000*scale);
+		self.Line:SetThickness(scale * 2);
 	end
 end
+
+
 
 function WQTU:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New("WQTUDB", WQTU_DEFAULTS, true);
@@ -1035,7 +1074,7 @@ function WQTU:OnInitialize()
 			end
 		end
 	
-	_currentSort = WQT_Utils:GetSetting("sortBy");
+	self.currentSort = WQT_Utils:GetSetting("sortBy");
 	
 	-- Wipe expired history data
 	local t = date("*t", time());
@@ -1060,11 +1099,7 @@ function WQTU:OnInitialize()
 end
 
 function WQTU:OnEnable()
-	if (not IsInInstance() and WorldMapFrame.mapID) then
-		_currentContinent = C_Map.GetWorldPosFromMapPos(WorldMapFrame.mapID, _nullVector);
-		WQTU:UpdatePlayerPosition();
-		WQTU:UpdateDirectionLine();
-	end
+	WQTU_DirectLineFrame:UpdatePlayerPosition();
 	
 	WQT_WorldQuestFrame:RegisterCallback("InitFilter", AddToFilters);
 	WQT_WorldQuestFrame:RegisterCallback("FilterQuestList", function() WQTU_TallyList:UpdateList() end);
@@ -1092,8 +1127,8 @@ function WQTU:OnEnable()
 			end
 		end);
 	WQT_WorldQuestFrame:RegisterCallback("SortChanged", function(category) 
-			_currentSort = category; 
-			if (_currentSort == SORT_DISTANCE) then
+			WQTU.currentSort = category; 
+			if (WQTU.currentSort == SORT_DISTANCE) then
 				UpdateQuestsContinent();
 				UpdateQuestDistances();
 				WQT_QuestScrollFrame:ApplySort();
@@ -1108,7 +1143,7 @@ function WQTU:OnEnable()
 				end
 			end
 	
-			if (_currentSort == SORT_DISTANCE) then
+			if (WQTU.currentSort == SORT_DISTANCE) then
 				UpdateQuestsContinent();
 				UpdateQuestDistances();
 				WQT_QuestScrollFrame:ApplySort();
@@ -1136,14 +1171,7 @@ function WQTU:OnEnable()
 			WQTU_TallyList:Collapse(TallyAreaBlocked());
 		end);
 
-	hooksecurefunc(WorldMapFrame, "OnMapChanged", function() 
-			_currentContinent = C_Map.GetWorldPosFromMapPos(WorldMapFrame.mapID, _nullVector);
-			WQTU:UpdatePlayerPosition();
-		end)
-		
-	WorldMapFrame:HookScript("OnUpdate", function(self) 
-			WQTU:UpdateDirectionLine();
-		end)
+	
 	
 	local sortedTallies = {};
 	for key, value in pairs(WQTU.settings.tallies) do

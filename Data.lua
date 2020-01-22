@@ -25,8 +25,7 @@ _V["WQTU_SETTING_LIST"] = {
 	{["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = _L["DIRECTION_LINE"], ["tooltip"] = _L["DIRECTION_LINE_TT"]
 			, ["valueChangedFunc"] = function(value) 
 				WQTU.settings.directionLine = value;
-				WQTU_DirectionLine:SetShown(value);
-				WQTU:UpdateDirectionLine();
+				WQTU_DirectLineFrame:UpdatePlayerPosition();
 			end
 			,["getValueFunc"] = function() return WQTU.settings.directionLine end;
 			}
@@ -56,10 +55,12 @@ local _patchNotes = {
 			,["minor"] = 2
 			,["changes"] = {
 				"Tally settings are now alphabetically sorted."
+				,"Clicking on the arrow tallies will now scroll through the overflow."
 			}
 			,["fixes"] = {
 				"Fixed distances not showing when quests are sorted by distance."
 				,"Fixed issues with WQTU settings."
+				,"Any possibility of map possitions causing errors should be gone."
 			}
 		}
 		,{["version"] = "8.3.01"

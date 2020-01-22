@@ -6,7 +6,7 @@
 	<Script file="Data.lua"/>
 	<Script file="WorldQuestTabUtilities.lua"/>
 	
-	<Frame name="WQTU_TallyTemplate" virtual="true" enableMouse="true" enableMouseWheel="true">
+	<Button name="WQTU_TallyTemplate" virtual="true" enableMouse="true">
 		<Size x="75" y="26" />
 		<HitRectInsets bottom="-1"/>
 		<Layers>
@@ -50,7 +50,7 @@
 						<MaskedTexture childKey="Icon"/>
 					</MaskedTextures>
 				</MaskTexture>
-				<FontString parentKey="Amount" inherits="GameFontNormalLeft" maxLines="1" justifyV="CENTER" text="99999">
+				<FontString parentKey="Amount" inherits="GameFontNormalLeft" maxLines="1" justifyV="MIDDLE" text="99999">
 					<Size y="20" />
 					<Anchors>
 						<Anchor point="LEFT" relativeKey="$parent.Icon" relativePoint="RIGHT" x="5"/>
@@ -74,6 +74,30 @@
 			<OnMouseWheel>
 				self:GetParent():ChangeIndex(-delta);
 			</OnMouseWheel>
+			<OnMouseDown>
+				if (self.delta ~= 0 and self:IsEnabled()) then
+					self.Icon:SetPoint("LEFT", 4, -1);
+					self.Amount:SetPoint("LEFT", self.Icon, "RIGHT", 5, -1);
+					self.Amount:SetPoint("RIGHT", -4, -1);
+					
+					self.BGCap:SetPoint("TOPLEFT", self, "TOPRIGHT", -7, -1);
+					self.BGCap:SetPoint("BOTTOMRIGHT", 1, -1);
+					self.BG:SetPoint("TOPLEFT", 0, -1);
+					self.BGDarken:SetPoint("TOPLEFT", 0, -3);
+				end
+			</OnMouseDown>
+			<OnMouseUp>
+				if (self.delta ~= 0 and self:IsEnabled()) then
+					self.Icon:SetPoint("LEFT", 3, 0);
+					self.Amount:SetPoint("LEFT", self.Icon, "RIGHT", 5, 0);
+					self.Amount:SetPoint("RIGHT", -5, 0);
+					
+					self.BGCap:SetPoint("TOPLEFT", self, "TOPRIGHT", -8, 0);
+					self.BGCap:SetPoint("BOTTOMRIGHT", 0, 0);
+					self.BG:SetPoint("TOPLEFT", 0, 0);
+					self.BGDarken:SetPoint("TOPLEFT", 0, -2);
+				end
+			</OnMouseUp>
 			<OnEnter>
 				if (self.name and self.amount) then
 					GameTooltip:SetOwner(self, "ANCHOR_CURSOR_RIGHT");
@@ -87,20 +111,33 @@
 				GameTooltip:Hide();
 				self:GetParent():HighlightQuests(self.quests, false);
 			</OnLeave>
+			<OnClick>
+				if (self.delta ~= 0) then
+					self:GetParent():ChangeIndex(self.delta);
+					PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+				end
+			</OnClick>
+		</Scripts>
+	</Button>
+	
+	<Frame name="WQTU_CoreFrame" parent="WQT_WorldQuestFrame" mixin="WQTU_CoreMixin">
+		<Scripts>
+			<OnLoad method="OnLoad"/>
+			<OnEvent method="OnEvent"/>
 		</Scripts>
 	</Frame>
 	
-	<Frame name="WQTU_CoreFrame" parent="WQT_WorldQuestFrame" mixin="WQTU_CoreMixin">
+	<Frame name="WQTU_DirectLineFrame" mixin="WQTU_DirectioLineMixin">
 		<Layers>
 			<Layer level="OVERLAY" textureSubLevel="2">
-				<Line name="WQTU_DirectionLine" thickness="2" horizTile="false" alpha="1" texelSnappingBias="0.0" snapToPixelGrid="false">
+				<Line parentKey="Line" thickness="2" horizTile="false" alpha="1" texelSnappingBias="0.0" snapToPixelGrid="false">
 					<Color r=".8" g=".8" b=".8" a=".5"/>
 				</Line>
 			</Layer>
 		</Layers>
 		<Scripts>
-			<OnLoad method="OnLoad" />
-			<OnEvent method="OnEvent" />
+			<OnLoad method="OnLoad"/>
+			<OnEvent method="OnEvent"/>
 		</Scripts>
 	</Frame>
 	
@@ -218,9 +255,9 @@
 				</Anchors>
 				<Layers>
 					<Layer level="BACKGROUND">
-						<Texture name="bg" file="Interface/GUILDFRAME/GuildFrame">
+						<Texture parentKey="bg" file="Interface/GUILDFRAME/GuildFrame">
 							<Color r="0.8" g="0.8" b="0.8"/>
-							<TexCoords lef="0" right="0.314453125" top="0.599609375‬" bottom="0.927734375‬"/>
+							<TexCoords left="0" right="0.314453125" top="0.599609375‬" bottom="0.927734375‬"/>
 						</Texture>
 					</Layer>
 					<Layer level="OVERLAY" textureSubLevel="2">
