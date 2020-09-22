@@ -60,7 +60,7 @@ local _patchNotes = {
 			,["fixes"] = {
 				"Fixed distances not showing when quests are sorted by distance."
 				,"Fixed issues with WQTU settings."
-				,"Any possibility of map possitions causing errors should be gone."
+				,"Any possibility of map positions causing errors should be gone."
 			}
 		}
 		,{["version"] = "8.3.01"

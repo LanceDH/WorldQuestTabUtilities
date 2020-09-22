@@ -159,8 +159,8 @@ function WQTU_Utilities:GetRewardInfo(index)
 		return _rewardInfoCache[category][rewardId];
 	end
 	if (category == "currency") then
-		local name, _, texture, _, _, _, _, quality = GetCurrencyInfo(rewardId);
-		name, texture, _, quality = CurrencyContainerUtil.GetCurrencyContainerInfo(rewardId, 1, name, texture, quality); 
+		local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(rewardId);
+		local name, texture, _, quality = CurrencyContainerUtil.GetCurrencyContainerInfo(rewardId, 1, currencyInfo.name, currencyInfo.iconFileID, currencyInfo.quality); 
 		_rewardInfoCache[category][rewardId] = { ["texture"] = texture, ["name"] = name, ["quality"] = quality};
 	elseif (category == "item") then
 		local name, _, quality, _, _, _, _, _, _, texture = GetItemInfo(rewardId);
@@ -201,6 +201,7 @@ function WQTU_Utilities:AddRewardToList(list, questId, category, rewardType, rew
 		list[index].quality = rewardInfo.quality;
 		list[index].amount = 0;
 		list[index].quests = {};
+		list[index].id = rewardId;
 	end
 	list[index].amount = list[index].amount + amount;
 	list[index].quests[questId] = true
@@ -732,7 +733,7 @@ function WQTU_CoreMixin:OnLoad()
 	self:RegisterEvent("GET_ITEM_INFO_RECEIVED");
 	
 	self.updateTicker = C_Timer.NewTicker(0.5, function() 
-			if (WorldMapFrame:IsShown() and (GetUnitSpeed("player") > 0 or UnitOnTaxi("player") == 1 or C_LossOfControl.GetNumEvents() > 0)) then
+			if (WorldMapFrame:IsShown() and (GetUnitSpeed("player") > 0 or UnitOnTaxi("player") == 1 or C_LossOfControl.GetActiveLossOfControlDataCount() > 0)) then
 				UpdateQuestDistances();
 				WQT_QuestScrollFrame:ApplySort();
 				WQT_QuestScrollFrame:DisplayQuestList();
@@ -979,7 +980,7 @@ end
 -- UpdateLineVisibility()
 -- UpdateLinePosition()		Positions the line. Happens OnUpdate of the world map
 
-WQTU_DirectioLineMixin = {};
+WQTU_DirectioLineMixin = {}
 
 function WQTU_DirectioLineMixin:OnLoad()
 	local mapChild = WorldMapFrame.ScrollContainer.Child;
@@ -992,7 +993,7 @@ function WQTU_DirectioLineMixin:OnLoad()
 	
 	-- Updates the player direction
 	self.updateTicker = C_Timer.NewTicker(0.5, function() 
-			if (WorldMapFrame:IsShown() and (GetUnitSpeed("player") > 0 or UnitOnTaxi("player") == 1 or C_LossOfControl.GetNumEvents() > 0)) then
+			if (WorldMapFrame:IsShown() and (GetUnitSpeed("player") > 0 or UnitOnTaxi("player") == 1 or C_LossOfControl.GetActiveLossOfControlDataCount() > 0)) then
 				self:UpdatePlayerPosition();
 			end
 		end);
