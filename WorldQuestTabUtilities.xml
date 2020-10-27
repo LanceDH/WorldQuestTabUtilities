@@ -289,7 +289,7 @@
 	<Frame name="WQTU_TallyList" parent="WQT_WorldQuestFrame" mixin="WQTU_TallyListMixin">
 		<Size x="1" y="1" />
 		<Anchors>
-			<Anchor point="TOPLEFT" relativeTo="WQT_WorldQuestFrame" relativePoint="TOPRIGHT" x="5"/>
+			<Anchor point="TOPLEFT" relativeTo="WQT_WorldQuestFrame" relativePoint="TOPRIGHT" x="4"/>
 		</Anchors>
 		<Scripts>
 			<OnLoad method="OnLoad" />

@@ -96,7 +96,6 @@ local _rewardInfoCache = {
 	
 
 local _azuriteID = C_CurrencyInfo.GetAzeriteCurrencyID();
-local _cachedRewards = {}
 
 local function Lerp(a, b, v)
 	return a + (b-a) * v;
@@ -177,22 +176,14 @@ end
 
 function WQTU_Utilities:AddRewardToList(list, questId, category, rewardType, rewardId, amount, warmodeBonus)
 	-- Cache the data while we're at it
-	if (not _cachedRewards[questId]) then
-		_cachedRewards[questId] = {};
-	end
 	local index = rewardId and category ..";"..rewardId or category;
-	_cachedRewards[questId][index] = amount;
-	
+
 	-- Only caching
 	if (not list) then return; end
 	
 	local rewardInfo = self:GetRewardInfo(index)
 	if (not rewardInfo) then return end
 	
-	-- Combine for tallies
-	if (warmodeBonus and _warmodeTypes[rewardType]) then
-		amount = amount + floor(amount * C_PvP.GetWarModeRewardBonus() / 100);
-	end
 	if (not list[index]) then
 		list[index] = {};
 		list[index].rewardType = rewardType;
@@ -207,63 +198,77 @@ function WQTU_Utilities:AddRewardToList(list, questId, category, rewardType, rew
 	list[index].quests[questId] = true
 end
 
-function WQTU_Utilities:AddQuestRewardsToList(list, questId, includeWarMode)
-	local addWardmodeBonus = includeWarMode and C_PvP.IsWarModeDesired() and C_QuestLog.QuestHasWarModeBonus(questId);
+function WQTU_Utilities:AddQuestInfoRewardsToList(list, questInfo, includeWarMode)
 	local settings = WQTU.settings;
-	if (settings.tallies.gold) then
-		local gold = GetQuestLogRewardMoney(questId)
-		if (gold > 0) then
-			WQTU_Utilities:AddRewardToList(list, questId, "gold", "gold", nil, gold, addWardmodeBonus);
+	for k, reward in questInfo:IterateRewards() do
+		local amount = reward.amount;
+		if (includeWarMode) then
+			amount = WQT_Utils:CalculateWarmodeAmount(reward.type, amount);
 		end
-	end
-	if (settings.tallies.honor) then
-		local honor = GetQuestLogRewardHonor(questId);
-		if (honor > 0) then
-			WQTU_Utilities:AddRewardToList(list, questId,"honor","honor", nil, honor, addWardmodeBonus);
-		end
-	end
-	local numCurrency = GetNumQuestLogRewardCurrencies(questId);
-	for i=1, numCurrency do
-		local _, texture, numItems, currencyId = GetQuestLogRewardCurrencyInfo(i, questId);
-		if (currencyId) then
-			if (currencyId == _azuriteID) then
-				if (settings.tallies.azerite) then
-					WQTU_Utilities:AddRewardToList(list, questId, "azerite", "azerite", nil, numItems, addWardmodeBonus);
-				end 
-			elseif (C_CurrencyInfo.GetFactionGrantedByCurrency(currencyId)) then
-				if (settings.tallies.reputation) then
-					WQTU_Utilities:AddRewardToList(list, questId, "currency","reputation", currencyId, numItems, addWardmodeBonus);
-				end
-			elseif (settings.tallies.currencies) then
-				WQTU_Utilities:AddRewardToList(list, questId, "currency", "currencies", currencyId, numItems,addWardmodeBonus);
-			end
-		end
-	end
-	for i=1, GetNumQuestLogRewards(questId) do
-		local _, _, numItems, _, _, itemID = GetQuestLogRewardInfo(i, questId);
-		if(itemID) then
-			local name, _, rarity, ilvl, _, _, _, _, _, texture, price, itemClassID, itemSubClassID = GetItemInfo(itemID);
-			if (itemClassID == 0) then
-				if (itemSubClassID == 8 and price == 0 and ilvl > 100) then 
-					if (settings.tallies.tokens) then
-						WQTU_Utilities:AddRewardToList(list, questId, "item", "tokens", itemID, numItems, addWardmodeBonus);
-					end
-				elseif (settings.tallies.consumables) then
-					WQTU_Utilities:AddRewardToList(list, questId, "item","consumables", itemID, numItems, addWardmodeBonus);
-				end
-			elseif (settings.tallies.reagents and itemClassID == 7) then
-				WQTU_Utilities:AddRewardToList(list, questId, "item", "reagents", itemID, numItems, addWardmodeBonus);
-			elseif (settings.tallies.misc and itemClassID == 15 and itemSubClassID == LE_ITEM_MISCELLANEOUS_OTHER) then
-				WQTU_Utilities:AddRewardToList(list, questId, "item", "misc", itemID, numItems, addWardmodeBonus);
-			end
+		
+		local catA, catB, id, _, allowTally = WQTU_Utilities:GetRewardCategoryInfo(reward.type, reward.id);
+
+		if (allowTally and catA and catB) then
+			WQTU_Utilities:AddRewardToList(list, questInfo.questId, catA, catB, id, amount);
 		end
 	end
 end
 
-function WQTU_Utilities:AddQuestRewardsToHistory(questId) 
-	local rewards = _cachedRewards[questId];
-	if (not rewards) then return; end
+function WQTU_Utilities:GetRewardCategoryInfo(rewardType, rewardId)
+	local catA, catB, id, index, allowTally;
+	local settings = WQTU.settings;
+	
+	if (rewardType == WQT_REWARDTYPE.gold) then
+		catA = "gold";
+		catB = "gold";
+		allowTally = settings.tallies.gold;
+	elseif (rewardType == WQT_REWARDTYPE.honor) then
+		catA = "honor";
+		catB = "honor";
+		allowTally = settings.tallies.honor;
+	elseif (rewardType == WQT_REWARDTYPE.artifact) then
+		catA = "azerite";
+		catB = "azerite";
+		allowTally = settings.tallies.azerite;
+	elseif (rewardType == WQT_REWARDTYPE.reputation) then
+		catA = "currency";
+		catB = "reputation";
+		id = rewardId;
+		allowTally = settings.tallies.reputation;
+	elseif (rewardType == WQT_REWARDTYPE.currency) then
+		catA = "currency";
+		catB = "currencies";
+		allowTally = settings.tallies.currencies;
+		id = rewardId;
+	elseif (rewardType == WQT_REWARDTYPE.item and rewardId) then
+		catA = "item";
+		local name, _, rarity, ilvl, _, _, _, _, _, texture, price, itemClassID, itemSubClassID = GetItemInfo(rewardId);
+		id = rewardId;
+		if (itemClassID == 0) then
+			if (itemSubClassID == 8 and price == 0 and ilvl > 100) then 
+				catB = "tokens";
+				allowTally = settings.tallies.tokens;
+			else
+				catB = "consumables";
+				allowTally = settings.tallies.consumables;
+			end
+		elseif (itemClassID == 7) then
+			catB = "reagents";
+			allowTally = settings.tallies.reagents;
+		elseif (itemClassID == 15 and itemSubClassID == LE_ITEM_MISCELLANEOUS_OTHER) then
+			catB = "misc";
+			allowTally = settings.tallies.misc;
+		end
+	end
+	
+	if (catA) then
+		index = id and catA ..";"..id or catA;
+	end
+	
+	return catA, catB, id, index, allowTally;
+end 
 
+function WQTU_Utilities:AddQuestRewardsToHistory(questInfo) 
 	local history = WQTU.settings.history;
 	local t = date("*t", time());
 	local timestamp = time({["year"] = t.year, ["month"] = t.month, ["day"] = t.day});
@@ -286,14 +291,13 @@ function WQTU_Utilities:AddQuestRewardsToHistory(questId)
 	end
 	historyCharacter.faction = GetPlayerFactionGroup(); -- In case a panda grows up to pick a side
 	
-	for index, amount in pairs(rewards) do
+	for k, reward in questInfo:IterateRewards() do
+		local amount = WQT_Utils:CalculateWarmodeAmount(reward.type, reward.amount);
+		local _, _, _, index = WQTU_Utilities:GetRewardCategoryInfo(reward.type, reward.id);
 		local storedAmount = historyCharacter.rewards[index] or 0;
 		storedAmount = storedAmount + amount;
 		historyCharacter.rewards[index] = storedAmount;
 	end
-	
-	-- No longer need the cached info
-	_cachedRewards[questId] = nil;
 end
 
 local function TallyAreaBlocked()
@@ -307,7 +311,8 @@ local function UpdateQuestDistances()
 		local distance = math.huge;
 		-- Only count the current continent. Player's coordinates are per map file
 		if (playerContinent and playerContinent == continent) then 
-			distance =  math.sqrt(C_TaskQuest.GetDistanceSqToQuest(questInfo.questId));
+			local distSq = C_QuestLog.GetDistanceSqToQuest(questInfo.questId);
+			distance =  distSq and math.sqrt(distSq) or math.huge;
 		end
 		questInfo.mapInfo.distance = distance;
 	end
@@ -729,7 +734,6 @@ end
 WQTU_CoreMixin = {};
 
 function WQTU_CoreMixin:OnLoad()
-	self:RegisterEvent("QUEST_TURNED_IN");
 	self:RegisterEvent("GET_ITEM_INFO_RECEIVED");
 	
 	self.updateTicker = C_Timer.NewTicker(0.5, function() 
@@ -742,10 +746,7 @@ function WQTU_CoreMixin:OnLoad()
 end
 
 function WQTU_CoreMixin:OnEvent(event, ...)
-	if (event == "QUEST_TURNED_IN") then
-		local questId = ...;
-		WQTU_Utilities:AddQuestRewardsToHistory(questId)
-	elseif (event == "GET_ITEM_INFO_RECEIVED") then
+	if (event == "GET_ITEM_INFO_RECEIVED") then
 		local itemId, success = ...;
 		if (success and _rewardInfoCache["item"][itemId] and _rewardInfoCache["item"][itemId].isMissingData and WQTU_GraphFrame:IsShown()) then
 			WQTU_GraphFrame:CreateButtons();
@@ -788,9 +789,9 @@ function WQTU_TallyListMixin:TallyRewards()
 
 	-- Calculate everything
 	for k, questInfo in ipairs(WQT_QuestScrollFrame.questListDisplay) do
-		WQTU_Utilities:AddQuestRewardsToList(self.rewards, questInfo.questId, true)
+		WQTU_Utilities:AddQuestInfoRewardsToList(self.rewards, questInfo, true);
 	end
-
+	
 	-- Transfer relevant to sortable list
 	for k, reward in pairs(self.rewards) do
 		if(reward.amount > 0) then
@@ -1075,7 +1076,7 @@ function WQTU:OnInitialize()
 			end
 		end
 	
-	self.currentSort = WQT_Utils:GetSetting("sortBy");
+	self.currentSort = WQT_Utils:GetSetting("general", "sortBy");
 	
 	-- Wipe expired history data
 	local t = date("*t", time());
@@ -1102,11 +1103,14 @@ end
 function WQTU:OnEnable()
 	WQTU_DirectLineFrame:UpdatePlayerPosition();
 	
-	WQT_WorldQuestFrame:RegisterCallback("InitFilter", AddToFilters);
+	WQT_WorldQuestFrame:RegisterCallback("InitSettings", AddToFilters);
 	WQT_WorldQuestFrame:RegisterCallback("FilterQuestList", function() WQTU_TallyList:UpdateList() end);
+	WQT_WorldQuestFrame:RegisterCallback("WorldQuestCompleted", function(questId, questInfo) WQTU_Utilities:AddQuestRewardsToHistory(questInfo) end);
+	
 	-- Replace quest zone text with distance when needed
 	WQT_WorldQuestFrame:RegisterCallback("ListButtonUpdate", function(button) 
-			if (WQT_Utils:GetSetting("sortBy") == SORT_DISTANCE and WQT_Utils:GetSetting("list", "showZone")) then
+			if (WQT_Utils:GetSetting("general", "sortBy") == SORT_DISTANCE and WQT_Utils:GetSetting("list", "showZone")) then
+				
 				local text = UNKNOWN;
 				local distance = button.questInfo.mapInfo.distance;
 				WQT_Utils:GetSetting("list", "zone")
@@ -1137,27 +1141,11 @@ function WQTU:OnEnable()
 			end
 		end);
 	WQT_WorldQuestFrame:RegisterCallback("QuestsLoaded", function() 
-			-- Update Reward Cache
-			for questInfo in pairs(WQT_WorldQuestFrame.dataProvider.pool.activeObjects) do
-				if (HaveQuestRewardData(questInfo.questId)) then
-					WQTU_Utilities:AddQuestRewardsToList(nil, questInfo.questId);
-				end
-			end
-	
 			if (WQTU.currentSort == SORT_DISTANCE) then
 				UpdateQuestsContinent();
 				UpdateQuestDistances();
 				WQT_QuestScrollFrame:ApplySort();
 				WQT_QuestScrollFrame:DisplayQuestList();
-			end
-		end);
-	
-	WQT_WorldQuestFrame:RegisterCallback("WaitingRoomUpdated", function() 
-			-- Update Reward Cache
-			for questInfo in pairs(WQT_WorldQuestFrame.dataProvider.pool.activeObjects) do
-				if (HaveQuestRewardData(questInfo.questId)) then
-					WQTU_Utilities:AddQuestRewardsToList(nil, questInfo.questId);
-				end
 			end
 		end);
 		
