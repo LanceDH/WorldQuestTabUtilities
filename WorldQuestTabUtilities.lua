@@ -294,9 +294,12 @@ function WQTU_Utilities:AddQuestRewardsToHistory(questInfo)
 	for k, reward in questInfo:IterateRewards() do
 		local amount = WQT_Utils:CalculateWarmodeAmount(reward.type, reward.amount);
 		local _, _, _, index = WQTU_Utilities:GetRewardCategoryInfo(reward.type, reward.id);
-		local storedAmount = historyCharacter.rewards[index] or 0;
-		storedAmount = storedAmount + amount;
-		historyCharacter.rewards[index] = storedAmount;
+		-- Filter out rewards we don't want to count (i.e. armor)
+		if (index) then
+			local storedAmount = historyCharacter.rewards[index] or 0;
+			storedAmount = storedAmount + amount;
+			historyCharacter.rewards[index] = storedAmount;
+		end
 	end
 end
 
