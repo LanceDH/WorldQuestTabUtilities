@@ -1,7 +1,7 @@
 ﻿
 local _addonName, _addon = ...;
 
-local ADD = LibStub("AddonDropDown-1.0");
+local ADD = LibStub("AddonDropDown-2.0");
 local _L = _addon.L;
 local _V = _addon.variables;
 local WQT_V;
@@ -561,14 +561,14 @@ end
 
 WQTU_GraphFrameMixin = {};
 
-local function InitFilterButton(graphFrame, options, dropdown, level)
-	local selectedValue = ADD:GetSelectedValue(dropdown);
-	local info = ADD:CreateInfo();
-	info.func = function(self, selected) 
-			if(selected ~= ADD:GetSelectedValue(dropdown)) then
-				ADD:SetSelectedValue(dropdown, selected);
-				ADD:SetText(dropdown, options[selected]);
-				graphFrame:CreateButtons();
+local function InitFilterButton(button, options, ddFrame)
+	local selectedValue = button.selectedValue;
+	local info = ddFrame:CreateButtonInfo();
+	info.func = function(ddButton, selected) 
+			if(selected ~= selectedValue) then
+				button.selectedValue = selected;
+				button:SetDisplayText(options[selected]);
+				button:GetParent():CreateButtons();
 			end
 		end
 	
@@ -581,29 +581,28 @@ local function InitFilterButton(graphFrame, options, dropdown, level)
 		else
 			info.checked = nil;
 		end
-		ADD:AddButton(info, level);
+		ddFrame:AddButton(info);
 	end
 end
 
 function WQTU_GraphFrameMixin:OnLoad()
 	self.buttonPool = CreateFramePool("BUTTON", self, "WQTU_GraphButtonTemplate");
-	self.factionButton = ADD:CreateMenuTemplate("WQTU_GraphFactionButton", self, nil, "BUTTON");
+	
+	self.factionButton = ADD:CreateMenuTemplate("WQTU_GraphFactionButton", self);
 	self.factionButton:SetHeight(22);
 	self.factionButton:SetPoint("TOPLEFT", self.Graph, "BOTTOMLEFT", 10, -10);
 	self.factionButton:SetPoint("RIGHT", self.Graph, "CENTER", -3, 0);
-	self.factionButton:EnableMouse(false);
-	self.factionButton:SetScript("OnClick", function() PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON); end);
-	ADD:Initialize(self.factionButton, function(dropdown, level) InitFilterButton(self, _V["HISTORY_SORT_FACTION"], dropdown, level) end);
-	ADD:SetSelectedValue(self.factionButton, 1);
-	
-	self.scopeButton = ADD:CreateMenuTemplate("WQTU_GraphScopeButton", self, nil, "BUTTON");
+	self.factionButton.selectedValue = 1;
+	self.factionButton:SetDisplayText(_V["HISTORY_SORT_FACTION"][1]);
+	ADD:LinkDropDown(self.factionButton, function(...) InitFilterButton(self.factionButton, _V["HISTORY_SORT_FACTION"], ...) end, nil, nil, nil, nil, "LIST");
+
+	self.scopeButton = ADD:CreateMenuTemplate("WQTU_GraphScopeButton", self);
 	self.scopeButton:SetHeight(22);
 	self.scopeButton:SetPoint("TOPRIGHT", self.Graph, "BOTTOMRIGHT", -10, -10);
 	self.scopeButton:SetPoint("LEFT", self.Graph, "CENTER", 3, 0);
-	self.scopeButton:EnableMouse(false);
-	self.scopeButton:SetScript("OnClick", function() PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON); end);
-	ADD:Initialize(self.scopeButton, function(dropdown, level) InitFilterButton(self, _V["HISTORY_FILTER_SCOPE"], dropdown, level) end);
-	ADD:SetSelectedValue(self.scopeButton, 1);
+	self.scopeButton.selectedValue = 1;
+	self.scopeButton:SetDisplayText(_V["HISTORY_FILTER_SCOPE"][1]);
+	ADD:LinkDropDown(self.scopeButton, function(...) InitFilterButton(self.scopeButton, _V["HISTORY_FILTER_SCOPE"], ...) end, nil, nil, nil, nil, "LIST");
 end
 
 function WQTU_GraphFrameMixin:AddButton(index, offsetx, offsetY)
@@ -629,11 +628,11 @@ function WQTU_GraphFrameMixin:CreateButtons()
 	local t = date("*t", time());
 	local timeStamp = time({["year"] = t.year, ["month"] = t.month, ["day"] = t.day});
 	
-	local scopeId = ADD:GetSelectedValue(self.scopeButton);
+	local scopeId = self.scopeButton.selectedValue;
 	local rewardIndexes = {};
 	for i = 0, HISTORY_DAYS-1 do
 		local history = WQTU.settings.history[timeStamp - i * 86400];
-		CallFunctionOnHistory(history, function(index) if (not rewardIndexes[index]) then rewardIndexes[index] = true; end  end, ADD:GetSelectedValue(self.factionButton), ADD:GetSelectedValue(self.scopeButton));
+		CallFunctionOnHistory(history, function(index) if (not rewardIndexes[index]) then rewardIndexes[index] = true; end  end, self.factionButton.selectedValue, self.scopeButton.selectedValue);
 	end
 	
 	local sortedIndexes = {};
@@ -718,8 +717,8 @@ function WQTU_GraphFrameMixin:UpdateGraph(index)
 	
 	local rewardValues = {};
 	
-	local factionFilterId = ADD:GetSelectedValue(self.factionButton);
-	local scopeFilterId = ADD:GetSelectedValue(self.scopeButton);
+	local factionFilterId = self.factionButton.selectedValue;
+	local scopeFilterId = self.scopeButton.selectedValue;
 	for i = 0, HISTORY_DAYS-1 do
 		local ts = timeStamp - i * 86400;
 		tinsert(labels, date("%B %d", ts));
@@ -915,9 +914,10 @@ function WQTU_TallyListMixin:HighlightQuests(quests, value)
 	
 end
 
-local function AddToFilters(self, level)
-	local info = ADD:CreateInfo();
-	info.keepShownOnClick = true;	
+local function AddToFilters(ddFrame)
+	local level = ddFrame.level;
+	local info = ddFrame:CreateButtonInfo();
+	info.keepShownOnClick = false;	
 	info.tooltipWhileDisabled = true;
 	info.tooltipOnButton = true;
 	info.motionScriptsWhileDisabled = true;
@@ -950,7 +950,7 @@ local function AddToFilters(self, level)
 						WQT_WorldQuestFrame:ShowOverlayFrame(scrollFrame, 10, -18, -3, 3);
 						
 					end
-		ADD:AddButton(info, level)
+		ddFrame:AddButton(info)
 		
 		info.text = _L["REWARD_GRAPH"];
 		info.tooltipTitle = _L["REWARD_GRAPH"];
@@ -959,7 +959,7 @@ local function AddToFilters(self, level)
 						WQT_WorldQuestFrame:ShowOverlayFrame(WQTU_GraphFrame);
 						WQTU_GraphFrame:CreateButtons();
 					end
-		ADD:AddButton(info, level)
+		ddFrame:AddButton(info)
 	end
 end
 

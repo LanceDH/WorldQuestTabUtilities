@@ -52,6 +52,10 @@ _V["WQTU_SETTING_LIST"] = {
 -- This is just easier to maintain than changing the entire string every time
 local _patchNotes = {
 		{["version"] = "9.0.01"
+			,["minor"] = 4
+			,["intro"] = {"Compatibility update with new World Quest Tab update"}
+		}
+		,{["version"] = "9.0.01"
 			,["minor"] = 3
 			,["fixes"] = {
 				"Fixed an error when completing a world quest with rewards that don't get tallied (i.e. armor)"

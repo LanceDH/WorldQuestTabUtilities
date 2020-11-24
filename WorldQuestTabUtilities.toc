@@ -1,8 +1,8 @@
-﻿## Interface: 90001
+﻿## Interface: 90002
 ## Title: World Quest Tab Utilities
 ## Notes: Plug-in for World Quest Tab.
 ## Author: LanceDH
-## Version: 9.0.01.3
+## Version: 9.0.01.4
 ## LoadOnDemand: 1
 ## SavedVariables: WQTUDB
 ## Dependencies: WorldQuestTab
