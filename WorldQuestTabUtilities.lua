@@ -24,15 +24,16 @@ local _playerName = UnitName("player");
 local _playerRealm = GetRealmName();
 
 local _priorities = {
-	["azerite"] = 1;
-	["gold"] = 2;
-	["tokens"] = 3;
-	["reagents"] = 4;
-	["consumables"] = 5;
-	["misc"] = 6;
-	["currencies"] = 7;
-	["reputation"] = 8;
-	["honor"] = 9;
+	["anima"] = 1;
+	["azerite"] = 2;
+	["gold"] = 3;
+	["tokens"] = 4;
+	["reagents"] = 5;
+	["consumables"] = 6;
+	["misc"] = 7;
+	["currencies"] = 8;
+	["reputation"] = 9;
+	["honor"] = 10;
 }
 
 local _warmodeTypes = {
@@ -51,6 +52,7 @@ local _tallyLabels = {
 			["consumables"] = BAG_FILTER_CONSUMABLES;
 			["tokens"] = TOKENS;
 			["misc"] = BINDING_HEADER_COMMENTATORMISC;
+			["anima"] = ANIMA;
 		}
 
 local WQTU_DEFAULTS = {
@@ -62,6 +64,7 @@ local WQTU_DEFAULTS = {
 		["tallies"] = {
 				["gold"] = true;
 				["azerite"] = true;
+				["anima"] = true;
 				["honor"] = true;
 				["currencies"] = true;
 				["reputation"] = true;
@@ -88,6 +91,11 @@ local _rewardInfoCache = {
 		,["azerite"] = {
 			["texture"] = 2032607
 			,["name"] = "Azerite"
+			,["quality"] = 1
+		}
+		,["anima"] = {
+			["texture"] = 3528288
+			,["name"] = "anima"
 			,["quality"] = 1
 		}
 		,["currency"] = {}
@@ -226,6 +234,10 @@ function WQTU_Utilities:GetRewardCategoryInfo(rewardType, rewardId)
 		catA = "honor";
 		catB = "honor";
 		allowTally = settings.tallies.honor;
+	elseif (rewardType == WQT_REWARDTYPE.anima) then
+		catA = "anima";
+		catB = "anima";
+		allowTally = settings.tallies.anima;
 	elseif (rewardType == WQT_REWARDTYPE.artifact) then
 		catA = "azerite";
 		catB = "azerite";
@@ -1175,7 +1187,7 @@ function WQTU:OnEnable()
 	
 	for key, entry in ipairs(sortedTallies) do
 		local value = WQTU.settings.tallies[entry.key];
-		tinsert(_V["WQTU_SETTING_LIST"], {["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU", ["label"] = entry.label
+		tinsert(_V["WQTU_SETTING_LIST"], {["type"] = WQT_V["SETTING_TYPES"].checkBox, ["categoryID"] = "WQTU_TALLIES", ["label"] = entry.label
 				, ["valueChangedFunc"] = function(value) 
 					WQTU.settings.tallies[entry.key] = value;
 					WQTU_TallyList:UpdateList();
@@ -1187,6 +1199,7 @@ function WQTU:OnEnable()
 	wipe(sortedTallies);
 	
 	-- Add WQTU settings to WQT's list
+	WQT_SettingsFrame:RegisterCategories(_V["WQTU_SETTINGS_CATEGORIES"])
 	WQT_SettingsFrame:AddSettingList(_V["WQTU_SETTING_LIST"]);
 end
 
